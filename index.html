@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0f172a">
+<title>Escáner Hoja de Ruta</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- ======================= PANTALLA 1: CÁMARA ======================= -->
+  <section id="screen-camera" class="screen active">
+    <div class="camera-wrap">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="overlay"></canvas>
+
+      <div class="top-bar">
+        <div id="status-pill" class="status-pill">Buscando documento…</div>
+        <button id="btn-torch" class="icon-btn hidden" title="Linterna" aria-label="Linterna">🔦</button>
+      </div>
+
+      <div id="low-light-banner" class="low-light-banner hidden">
+        Poca luz detectada. Acércate a una fuente de luz para una mejor lectura.
+      </div>
+
+      <div class="bottom-bar">
+        <div class="bottom-bar-row">
+          <button id="btn-gallery" class="side-btn" title="Historial">📋<span>Historial</span></button>
+          <button id="btn-capture" class="capture-btn" aria-label="Tomar foto">
+            <span class="capture-btn-inner"></span>
+          </button>
+          <button id="btn-flip" class="side-btn" title="Cambiar cámara">🔄<span>Cámara</span></button>
+        </div>
+        <p class="hint">Encuadra el documento completo. Se toma la foto automáticamente al enfocar, o presiona el botón.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= PANTALLA 2: REVISIÓN DE FOTO ======================= -->
+  <section id="screen-preview" class="screen">
+    <div class="preview-wrap">
+      <img id="preview-img" alt="Documento capturado">
+      <div class="preview-actions">
+        <button id="btn-retake" class="btn btn-secondary">↺ Volver a tomar</button>
+        <button id="btn-use-photo" class="btn btn-primary">Usar esta foto →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= PANTALLA 3: EXTRAYENDO ======================= -->
+  <section id="screen-loading" class="screen">
+    <div class="loading-wrap">
+      <div class="spinner"></div>
+      <p id="loading-text">Extrayendo datos del documento…</p>
+    </div>
+  </section>
+
+  <!-- ======================= PANTALLA 4: FORMULARIO DE CONFIRMACIÓN ======================= -->
+  <section id="screen-form" class="screen">
+    <form id="data-form" class="form-wrap">
+      <header class="form-header">
+        <button type="button" id="btn-back-to-preview" class="icon-btn" aria-label="Volver">←</button>
+        <h1>Confirma los datos</h1>
+      </header>
+
+      <div id="extract-warning" class="warning-banner hidden">
+        No se pudieron leer algunos campos automáticamente. Complétalos a mano antes de guardar.
+      </div>
+
+      <div class="field">
+        <label for="f-hoja-ruta">Hoja de Ruta</label>
+        <input id="f-hoja-ruta" name="hojaRuta" type="text" placeholder="HR0082193" autocomplete="off" required>
+      </div>
+
+      <div class="field">
+        <label for="f-orden-venta">Orden(es) de venta</label>
+        <input id="f-orden-venta" name="ordenVenta" type="text" placeholder="DIP192467, DIP192205" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="f-vehiculo">Vehículo / Conductor</label>
+        <input id="f-vehiculo" name="vehiculoConductor" type="text" placeholder="VLLV-42 / Kyliams López" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="f-fecha">Fecha de despacho</label>
+        <input id="f-fecha" name="fechaDespacho" type="text" placeholder="4 sept 2026, 8:45:44 a.m." autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="f-cliente">Cliente</label>
+        <input id="f-cliente" name="cliente" type="text" placeholder="EMPRESA EL MERCURIO S.A.P" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="f-total">Total Volumen y Peso</label>
+        <input id="f-total" name="totalVolumenPeso" type="text" placeholder="7.385,536" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="f-casa-matriz">Casa Matriz</label>
+        <input id="f-casa-matriz" name="casaMatriz" type="text" placeholder="DIP BODEGA AEROPARQUE" autocomplete="off">
+      </div>
+
+      <button type="submit" id="btn-save" class="btn btn-primary btn-block">Guardar registro</button>
+    </form>
+  </section>
+
+  <!-- ======================= PANTALLA 5: ÉXITO ======================= -->
+  <section id="screen-success" class="screen">
+    <div class="success-wrap">
+      <div class="success-check">✓</div>
+      <p id="success-text">Guardado correctamente</p>
+      <p id="success-sub" class="success-sub"></p>
+      <button id="btn-scan-another" class="btn btn-primary">Escanear otro documento</button>
+    </div>
+  </section>
+
+  <!-- ======================= HISTORIAL / COLA PENDIENTE ======================= -->
+  <section id="screen-history" class="screen">
+    <div class="history-wrap">
+      <header class="form-header">
+        <button type="button" id="btn-close-history" class="icon-btn" aria-label="Cerrar">←</button>
+        <h1>Pendientes por enviar</h1>
+      </header>
+      <p class="hint" id="history-empty">No hay registros pendientes.</p>
+      <ul id="history-list" class="history-list"></ul>
+    </div>
+  </section>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- OpenCV.js para detección de bordes del documento (visión por computador en el navegador) -->
+  <script async src="https://docs.opencv.org/4.9.0/opencv.js" onload="window.__cvReady=true" onerror="window.__cvFailed=true"></script>
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
